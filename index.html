@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pirties Konfiguratorius</title>
+  <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f8f9fa;
+      color: #333;
+    }
+    .app {
+      max-width: 900px;
+      margin: 30px auto;
+      padding: 20px;
+      background: #ffffff;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      border-radius: 10px;
+    }
+    h1 {
+      text-align: center;
+      color: #007bff;
+      margin-bottom: 30px;
+      font-size: 2em;
+    }
+    .section {
+      margin-bottom: 20px;
+    }
+    .section-title {
+      margin-bottom: 15px;
+      font-size: 1.2em;
+      font-weight: bold;
+      color: #555;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      background: #ffffff;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 15px;
+      text-align: center;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    .card img {
+      max-width: 100px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+    }
+    .card.selected {
+      border-color: #007bff;
+      background: #e7f3ff;
+    }
+    .accordion {
+      margin-top: 15px;
+    }
+    .accordion-header {
+      padding: 12px 20px;
+      background-color: #f7f7f7;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      color: #333;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .accordion-header:hover {
+      background-color: #f1f1f1;
+    }
+    .accordion-content {
+      padding: 10px 20px;
+      border: 1px solid #ddd;
+      border-top: none;
+      border-radius: 0 0 6px 6px;
+      display: none;
+      background: #fdfdfd;
+    }
+    .accordion-content.open {
+      display: block;
+    }
+    .extra-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+    .extra-item:hover {
+      background-color: #f9f9f9;
+    }
+    .extra-item.selected {
+      background-color: #e7f3ff;
+      border-left: 4px solid #007bff;
+    }
+    .extra-item:last-child {
+      border-bottom: none;
+    }
+    .total-calculator {
+      text-align: center;
+      padding: 20px;
+      background: #f4f4f4;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    }
+    .total-calculator h3 {
+      margin: 0;
+      font-size: 1.5em;
+      color: #007bff;
+    }
+    .download-button {
+      margin-top: 20px;
+      text-align: center;
+    }
+    .download-button button {
+      padding: 10px 20px;
+      background: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+    .download-button button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const CONFIG = {
+      basePrices: { A: 1000, B: 1200, C: 1500 },
+      lengths: [
+        { value: 2, label: '2m', price: 2000, image: './images/length2m.jpg' },
+        { value: 3, label: '3m', price: 2400, image: './images/length3m.jpg' },
+        { value: 4, label: '4m', price: 3700, image: './images/length4m.jpg' },
+      ],
+      forms: [
+        { id: 'A', name: 'Forma A', image: './images/formA.jpg' },
+        { id: 'B', name: 'Forma B', image: './images/formB.jpg' },
+        { id: 'C', name: 'Forma C', image: './images/formC.jpg' },
+      ],
+      extrasPrices: {
+        'Medienos tipas': {
+          'Eglės mediena': 0,
+          'Termo mediena': 1500,
+        },
+        'Krosnelės tipas': {
+          'Be krosnelės': 0,
+          'Elektrinė Harvia Trendi KI P90 9kw': 350,
+          'Elektrinė Harvia Cilindro PC90 9kw': 570,
+          'Malkinė Harvia M3': 500,
+          'Malkinė Harvia 20 PRO': 770,
+        },
+        'Elektrinės krosnelės Wi-Fi valdymas': {
+          'Be valdymo': 0,
+          'Su Wi-Fi valdymu': 700,
+        },
+        'Pakūra iš lauko / priešpirčio': {
+          'Be pakūros iš lauko/priešpirčio': 0,
+          'Su pakūra iš lauko/priešpirčio': 500,
+        },
+        'Vandens bakelis': {
+          'Be vandens bakelio': 0,
+          'Su vandens bakeliu ant kamino': 250,
+        },
+        'Kamino tipas': {
+          'Be kamino': 0,
+          'Kaminas per sieną': 200,
+          'Apšiltintas kaminas per stogą': 350,
+        },
+        'Suolų išdėstymas': {
+          'Vieno aukšto suolai pirties šonuose': 0,
+          'Dviejų aukštų L formos suolai': 250,
+        },
+        'Durų tipas': {
+          'Grūdinto stiklo': 0,
+          'Pilnai medinė': 50,
+          'Medinės su grūdintu stiklu': 100,
+        },
+        'Langai priekyje': {
+          'Be langų': 0,
+          '2vnt. langai 500x100': 150,
+        },
+        'Langai gale': {
+          '2vnt langai 500x1000': 150,
+          'Panoraminis 50 % stiklas': 300,
+        },
+        'LED apšvietimas': {
+          'Be led apšvietimo': 0,
+          'Su led apšvietimu': 250,
+        },
+        'Bluetooth audio sistema': {
+          'Be Bluetooth audio sistema': 0,
+          'Su Bluetooth audio sistema': 250,
+        },
+        'Metalinės suveržimo juostos': {
+          'Be metaliniu juostu': 0,
+          'Su metalinėmis juostomis': 100,
+        },
+      },
+    };
+
+    const App = () => {
+      const [selectedForm, setSelectedForm] = React.useState(null);
+      const [selectedLength, setSelectedLength] = React.useState(null);
+      const [extras, setExtras] = React.useState({});
+      const [openAccordion, setOpenAccordion] = React.useState(null);
+
+      const calculateTotal = () => {
+        let total = 0;
+
+        if (selectedForm) {
+          total += CONFIG.basePrices[selectedForm];
+        }
+
+        if (selectedLength) {
+          const length = CONFIG.lengths.find((l) => l.value === selectedLength);
+          total += length ? length.price : 0;
+        }
+
+        for (let key in extras) {
+          total += extras[key] || 0;
+        }
+
+        return total;
+      };
+
+      const generatePDF = async () => {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        let y = 10;
+        doc.setFontSize(18);
+        doc.text('Pirties Konfiguracijos Ataskaita', 10, y);
+        y += 10;
+
+        if (selectedForm) {
+          const form = CONFIG.forms.find((f) => f.id === selectedForm);
+          doc.setFontSize(14);
+          doc.text(`Forma: ${form.name}`, 10, y);
+          y += 10;
+          const img = await fetch(form.image)
+            .then((res) => res.blob())
+            .then((blob) => new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result);
+              reader.readAsDataURL(blob);
+            }));
+          doc.addImage(img, 'JPEG', 10, y, 40, 40);
+          y += 50;
+        }
+
+        if (selectedLength) {
+          const length = CONFIG.lengths.find((l) => l.value === selectedLength);
+          doc.text(`Ilgis: ${length.label}`, 10, y);
+          y += 10;
+          const img = await fetch(length.image)
+            .then((res) => res.blob())
+            .then((blob) => new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result);
+              reader.readAsDataURL(blob);
+            }));
+          doc.addImage(img, 'JPEG', 10, y, 40, 40);
+          y += 50;
+        }
+
+        doc.text('Papildomi komponentai:', 10, y);
+        y += 10;
+        for (let key in extras) {
+          const option = Object.entries(CONFIG.extrasPrices[key]).find(
+            ([k, price]) => price === extras[key]
+          );
+          if (option) {
+            doc.text(`- ${key}: ${option[0]}`, 10, y);
+            y += 10;
+          }
+        }
+
+        doc.text(`Bendra kaina: €${calculateTotal()}`, 10, y);
+
+        doc.save('pirties-konfiguracija.pdf');
+      };
+
+      return (
+        <div className="app">
+          <h1>Pirties Konfiguratorius</h1>
+          <div className="section">
+            <h3 className="section-title">Pasirinkite pirties formą:</h3>
+            <div className="grid">
+              {CONFIG.forms.map((form) => (
+                <div
+                  key={form.id}
+                  className={`card ${selectedForm === form.id ? 'selected' : ''}`}
+                  onClick={() => setSelectedForm(form.id)}
+                >
+                  <img src={form.image} alt={`${form.name} nuotrauka`} />
+                  <p>{form.name}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="section">
+            <h3 className="section-title">Pasirinkite pirties ilgį:</h3>
+            <div className="grid">
+              {CONFIG.lengths.map((length) => (
+                <div
+                  key={length.value}
+                  className={`card ${selectedLength === length.value ? 'selected' : ''}`}
+                  onClick={() => setSelectedLength(length.value)}
+                >
+                  <img src={length.image} alt={`${length.label} nuotrauka`} />
+                  <p>{length.label} - €{length.price}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="section">
+            <h3 className="section-title">Pasirinkite papildomus komponentus:</h3>
+            {Object.entries(CONFIG.extrasPrices).map(([category, options]) => (
+              <div key={category} className="accordion">
+                <div
+                  className="accordion-header"
+                  onClick={() => setOpenAccordion(category)}
+                >
+                  {category}
+                </div>
+                <div
+                  className={`accordion-content ${openAccordion === category ? 'open' : ''}`}
+                >
+                  {Object.entries(options).map(([option, price]) => (
+                    <div
+                      key={option}
+                      className={`extra-item ${extras[category] === price ? 'selected' : ''}`}
+                      onClick={() => setExtras((prev) => ({ ...prev, [category]: price }))}
+                    >
+                      <span>{option}</span>
+                      <span>+€{price}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="total-calculator">
+            <h3>Bendra kaina: €{calculateTotal()}</h3>
+          </div>
+          <div className="download-button">
+            <button onClick={generatePDF}>Generuoti PDF</button>
+          </div>
+        </div>
+      );
+    };
+
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>
